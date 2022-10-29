@@ -1,18 +1,22 @@
 #ifndef RAYCAST_H
 #define RAYCAST_H
 
-#include "GameApp.h"
-#include "MapLoader.h"
-
 #include <vector>
 
-static constexpr float CELL_SIZE = 64.0f;
+#include "Constants.h"
+#include "GameApp.h"
+#include "MapLoader.h"
+#include "Player.h"
 
 class Raycast : public GameApp {
 private:
     sf::RenderTexture m_sfMiniMapTexture;
     sf::Sprite m_sfMiniMapSprite;
     std::vector<sf::RectangleShape> m_sfMiniMapWalls;
+
+    Player m_Player;
+
+    void DrawMapToTexture();
 protected:
     bool OnInitialize() override;
     bool OnUpdate(float fFrameTime) override;
