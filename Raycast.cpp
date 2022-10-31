@@ -60,8 +60,12 @@ bool Raycast::OnInitialize() {
 
     sf::Vector2f sfNewScale;
     sfNewScale.x = SCREEN_WIDTH / sfTexSize.x;
-    sfNewScale.y = SCREEN_HEIGHT / sfTexSize.y;
+    sfNewScale.y = SCREEN_HEIGHT / SCREEN_WIDTH;
+
+    float fyNewPos = (SCREEN_HEIGHT - sfTexSize.y * sfNewScale.y) * 0.5f;
+
     m_sfMiniMapSprite.setScale(sfNewScale);
+    m_sfMiniMapSprite.setPosition(0.0f, fyNewPos);
 
     return true;
 }
@@ -82,8 +86,6 @@ bool Raycast::OnUpdate(float fFrameTime) {
 
     m_sfMiniMapSprite.setTexture(sfMiniMapRenderTexture);
     m_sfViewSprite.setTexture(sfViewRenderTexture);
-
-    auto texDims = sfMiniMapRenderTexture.getSize();
     
     PushDrawableObject(&m_sfMiniMapSprite);
     PushDrawableObject(&m_sfViewSprite);
@@ -192,8 +194,6 @@ void Raycast::CastRays() {
 
     plyrData.second -= FOV * 0.5f;
     SetEquivalentAngle(plyrData.second);
-
-    int nDOFHoriz, nDOFVert;
 
     for (size_t i = 0; i < NUM_RAYS; i++) {
 	sfHorizVector = CastOneRay(true, plyrData);
@@ -312,6 +312,6 @@ void Raycast::SetEquivalentAngle(float& fDeg) {
 }
 
 Raycast::Raycast()
-    : GameApp(sf::VideoMode(1600, 600), "Raycast Engine", FPSControl::Locked60) 
+    : GameApp(sf::VideoMode(1600, 600), "Raycast Engine", FPSControl::Locked30) 
 {
 }
