@@ -41,6 +41,11 @@ void GameApp::RefreshAndDisplay() {
 	m_pWindow->draw(**itObjs);
     }
 
+    for (auto itObjs = m_llstLineVertices.begin();
+	itObjs != m_llstLineVertices.end(); itObjs++) {
+	m_pWindow->draw(*itObjs, 2, sf::Lines);
+    }
+
     // Display the result
     m_pWindow->display();
 }
@@ -64,6 +69,10 @@ void GameApp::RegisterSoundEffect(int nSfxNo, sf::SoundBuffer* psfSoundBuffer) {
 	std::make_shared<sf::Sound>(*psfSoundBuffer),
 	false
 	);
+}
+
+void GameApp::PushLines(const sf::Vertex* pVertices) {
+    m_llstLineVertices.push_back(pVertices);
 }
 
 GameApp::GameApp(std::string szWindowTitle,
@@ -141,6 +150,7 @@ int GameApp::RunGame() {
 
 	// Clear all the pointers in our linked list for the next frame
 	m_llstDrawableObjects.clear();
+	m_llstLineVertices.clear();
 
 	// If we have FPS control enabled, handle it here
 	if (m_ctrlMode != FPSControl::NONE) {

@@ -52,6 +52,7 @@ private:
     std::unordered_map<sf::Keyboard::Key, KeyStatus> m_hmKeys;
     std::unordered_map<int, std::pair<std::shared_ptr<sf::Sound>, bool>> m_hmSoundEffects;
     std::list<sf::Drawable*> m_llstDrawableObjects;
+    std::list<const sf::Vertex*> m_llstLineVertices;
 
     FPSControl m_ctrlMode;
 
@@ -87,6 +88,8 @@ protected:
     void MarkSoundForPlay(int nSfxNo);
 
     void RegisterSoundEffect(int nSfxNo, sf::SoundBuffer* psfSoundBuffer);
+
+    void PushLines(const sf::Vertex* pVertices);
 
 public:
     // Constructors, default title and FPS control is specified.
