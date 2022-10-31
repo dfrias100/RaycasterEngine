@@ -8,6 +8,7 @@
 #include <SFML/Graphics.hpp>
 
 #include "Constants.h"
+#include "MapLoader.h"
 
 class Player {
 private:
@@ -17,7 +18,7 @@ private:
     float m_fTheta = 0.0f;
 public:
     void Turn(bool bLeftRight, float fDeltaTime);
-    void MoveForward(bool bForwardBackward, float fDeltaTime);
+    void Move(bool bForwardBackward, float fDeltaTime);
     void SetPosition(sf::Vector2f sfNewPos);
     std::pair<sf::Vector2f, float> GetPositionAndAngle();
     sf::RectangleShape* GetPlayerRect();

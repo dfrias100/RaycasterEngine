@@ -26,9 +26,12 @@ private:
     sf::RenderTexture m_sfViewTexture;
     sf::Sprite m_sfViewSprite;
 
+    sf::Texture m_sfWallTexture;
+
     std::vector<sf::RectangleShape> m_sfMiniMapWalls;
     std::vector<sf::Vertex> m_vsfRayVertices;
     std::array<sf::RectangleShape, NUM_RAYS> m_asfViewWalls;
+    std::array<sf::RectangleShape, NUM_RAYS> m_asfViewWallsFog;
     std::array<RayCollisionType, NUM_RAYS> m_aCollisions;
     std::array<float, NUM_RAYS> m_aDistances;
 
@@ -41,6 +44,7 @@ private:
     inline float Distance(sf::Vector2f sfVec);
     float DegToRad(float fDeg);
     void SetEquivalentAngle(float& fDeg);
+    void MapTexture(float fPos, sf::RectangleShape& sfRect);
 
 protected:
     bool OnInitialize() override;

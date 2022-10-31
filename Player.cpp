@@ -16,11 +16,46 @@ void Player::Turn(bool bLeftRight, float fDeltaTime)
     m_sfStepDelta.y = 2.0f * CELL_SIZE * std::sin(m_fTheta * M_PI / 180.0f);
 }
 
-void Player::MoveForward(bool bForwardBackward, float fDeltaTime) {
+void Player::Move(bool bForwardBackward, float fDeltaTime) {
     float fDirMultiplier = bForwardBackward ? 1.0f : -1.0f;
-    m_sfPos += fDirMultiplier * (m_sfStepDelta / CELL_SIZE) * fDeltaTime;
+    auto prevPos = m_sfPos;
+    auto testStepDelta = m_sfStepDelta / CELL_SIZE;
+    m_sfPos += fDirMultiplier * testStepDelta * fDeltaTime;
 
-    m_sfPlayerRect.setPosition(m_sfPos * CELL_SIZE);
+    int xPos = m_sfPos.x, yPos = m_sfPos.y;
+
+    // TODO: Change this to a function
+    for (int i = 0; i < 3; i++) {
+	if (yPos >= 0 && yPos < MapLoader::sm_vMap.size() && xPos >= 0 && xPos < MapLoader::sm_vMap[yPos].size()) 
+	{
+	    if (MapLoader::sm_vMap[yPos][xPos] == MapLoader::TileTypes::Wall) 
+	    {
+		m_sfPos = prevPos;
+		auto nextTestStepDelta = testStepDelta;
+		
+		if (i == 0) 
+		{
+		    nextTestStepDelta.x *= 0;
+		}
+		else if (i == 1)
+		{
+		    nextTestStepDelta.y *= 0;
+		} 
+		else
+		{
+		    return;
+		}
+
+		m_sfPos += fDirMultiplier * nextTestStepDelta * fDeltaTime;
+
+		xPos = m_sfPos.x, yPos = m_sfPos.y;
+	    }
+	    else 
+	    {
+		m_sfPlayerRect.setPosition(m_sfPos * CELL_SIZE);
+	    }
+	} 
+    }
 }
 
 void Player::SetPosition(sf::Vector2f sfNewPos) {

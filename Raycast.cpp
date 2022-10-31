@@ -7,6 +7,10 @@ bool Raycast::OnInitialize() {
 
     sf::Vector2i sfTexSize(MapLoader::sm_sfBoundingBox.x * CELL_SIZE, MapLoader::sm_sfBoundingBox.y * CELL_SIZE);
     
+    if (!m_sfWallTexture.loadFromFile("walls.png")) {
+	return false;
+    }
+
     if (!m_sfMiniMapTexture.create(sfTexSize.x, sfTexSize.y)) {
 	return false;
     }
@@ -19,6 +23,12 @@ bool Raycast::OnInitialize() {
 
     for (sf::RectangleShape& sfRect : m_asfViewWalls) {
 	sfRect.setFillColor(sf::Color(180, 180, 180));
+	sfRect.setSize(sf::Vector2f(SCREEN_WIDTH / NUM_RAYS, SCREEN_HEIGHT));
+	sfRect.setTexture(&m_sfWallTexture);
+    }
+
+    for (sf::RectangleShape& sfRect : m_asfViewWallsFog) {
+	sfRect.setFillColor(sf::Color(0, 255, 255));
 	sfRect.setSize(sf::Vector2f(SCREEN_WIDTH / NUM_RAYS, SCREEN_HEIGHT));
     }
 
@@ -73,8 +83,8 @@ bool Raycast::OnInitialize() {
 bool Raycast::OnUpdate(float fFrameTime) {
     if (GetKeyStatus(sf::Keyboard::Left) == KeyStatus::Pressed) m_Player.Turn(true, fFrameTime);
     if (GetKeyStatus(sf::Keyboard::Right) == KeyStatus::Pressed) m_Player.Turn(false, fFrameTime);
-    if (GetKeyStatus(sf::Keyboard::Up) == KeyStatus::Pressed) m_Player.MoveForward(true, fFrameTime);
-    if (GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed) m_Player.MoveForward(false, fFrameTime);
+    if (GetKeyStatus(sf::Keyboard::Up) == KeyStatus::Pressed) m_Player.Move(true, fFrameTime);
+    if (GetKeyStatus(sf::Keyboard::Down) == KeyStatus::Pressed) m_Player.Move(false, fFrameTime);
 
     CastRays();
 
@@ -111,8 +121,6 @@ void Raycast::DrawWorldToTexture() {
     sf::RectangleShape sfGround;
     sf::RectangleShape sfSky;
 
-    sf::Vector3f sfSkyColor(0.0f, 255.0f, 255.0f);
-
     sfSky.setSize(sf::Vector2f(SCREEN_WIDTH, 0.5f * SCREEN_HEIGHT));
     sfSky.setFillColor(sf::Color(0, 255, 255));
 
@@ -143,18 +151,13 @@ void Raycast::DrawWorldToTexture() {
 
 	m_aDistances[i] *= std::cos(DegToRad(fAngleDiff));
 
-	sf::Vector3f sfRectColor = sf::Vector3f(180.0, 180.0, 180.0);
-
 	float fLerp = std::round(std::min(8.0f, m_aDistances[i]));
 	fLerp = 1.0f - (std::log((8.0f - fLerp) + 1.0f) / std::log(9.0f));
 
-	sfRectColor = sfRectColor + (sfSkyColor - sfRectColor) * fLerp;
+	sf::Color sfFogTransparency = m_asfViewWallsFog[i].getFillColor();
+	sfFogTransparency.a = fLerp * 255.0f;
 
-	m_asfViewWalls[i].setFillColor(sf::Color({
-	    (sf::Uint8)sfRectColor.x,
-	    (sf::Uint8)sfRectColor.y,
-	    (sf::Uint8)sfRectColor.z 
-	}));
+	m_asfViewWallsFog[i].setFillColor(sfFogTransparency);
 
 	fAngleDiff -= DELTA_THETA;
 	fRayProjectionPos = fRecipTan * std::tan(DegToRad(fAngleDiff));
@@ -166,7 +169,7 @@ void Raycast::DrawWorldToTexture() {
 	sf::Vector2f sfCurrPos = m_asfViewWalls[i].getPosition();
 
 	sfCurrSize.x = std::max(sfCurrSize.x, fNextScrPos - fScrPos);
-	sfCurrSize.y = std::min(fViewRectHeight, RECT_HEIGHT);
+	sfCurrSize.y = fViewRectHeight;
 
 	sfCurrPos.x = fScrPos;
 	sfCurrPos.y = (SCREEN_HEIGHT - sfCurrSize.y) / 2.0f;
@@ -174,9 +177,13 @@ void Raycast::DrawWorldToTexture() {
 	m_asfViewWalls[i].setSize(sfCurrSize);
 	m_asfViewWalls[i].setPosition(sfCurrPos);
 
+	m_asfViewWallsFog[i].setSize(sfCurrSize);
+	m_asfViewWallsFog[i].setPosition(sfCurrPos);
+
 	fScrPos = fNextScrPos;
 
 	m_sfViewTexture.draw(m_asfViewWalls[i]);
+	m_sfViewTexture.draw(m_asfViewWallsFog[i]);
     }
 
     m_sfViewTexture.display();
@@ -204,18 +211,18 @@ void Raycast::CastRays() {
 
 	if (fDistH < fDistV) 
 	{
-	    sfFinalVector = sfHorizVector;
+	    sfFinalVector = sfHorizVector + plyrData.first;
 	    m_aCollisions[i] = RayCollisionType::Horizontal;
 	    m_aDistances[i] = fDistH;
+	    MapTexture(sfFinalVector.x, m_asfViewWalls[i]);
 	}
 	else 
 	{
-	    sfFinalVector = sfVertVector;
+	    sfFinalVector = sfVertVector + plyrData.first;
 	    m_aCollisions[i] = RayCollisionType::Vertical;
 	    m_aDistances[i] = fDistV;
+	    MapTexture(sfFinalVector.y, m_asfViewWalls[i]);
 	}
-
-	sfFinalVector += plyrData.first;
 	
 	m_vsfRayVertices.push_back(sfFinalVector * CELL_SIZE);
 
@@ -286,7 +293,7 @@ inline sf::Vector2f Raycast::CastOneRay(bool bHorizontal, PlayerData& plyrData)
 	    && sfMapLocation.y < MapLoader::sm_vMap.size()
 	    && sfMapLocation.x < MapLoader::sm_vMap[sfMapLocation.y].size()
 	    && MapLoader::sm_vMap[sfMapLocation.y][sfMapLocation.x] == MapLoader::TileTypes::Wall) {
-	    break;
+	    bRunLoop = false;
 	}
 	else
 	{
@@ -309,6 +316,13 @@ float Raycast::DegToRad(float fDeg) {
 void Raycast::SetEquivalentAngle(float& fDeg) {
     if (fDeg > 360.0f) fDeg -= 360.0f;
     if (fDeg < 0.0f) fDeg += 360.0f;
+}
+
+void Raycast::MapTexture(float fPos, sf::RectangleShape& sfRect) {
+    float fOffset = std::ceil(std::round(fPos * CELL_SIZE) / CELL_SIZE) * CELL_SIZE;
+    fOffset = fOffset - fPos * CELL_SIZE;
+    sf::IntRect sfWallRect(fOffset, 0, std::ceil(CELL_SIZE / NUM_RAYS), CELL_SIZE);
+    sfRect.setTextureRect(sfWallRect);
 }
 
 Raycast::Raycast()
