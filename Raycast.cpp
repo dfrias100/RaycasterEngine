@@ -69,13 +69,25 @@ bool Raycast::OnInitialize() {
     }
 
     sf::Vector2f sfNewScale;
-    sfNewScale.x = SCREEN_WIDTH / sfTexSize.x;
-    sfNewScale.y = SCREEN_HEIGHT / SCREEN_WIDTH;
 
-    float fyNewPos = (SCREEN_HEIGHT - sfTexSize.y * sfNewScale.y) * 0.5f;
+    float fMiniMapViewAspectRatio = SCREEN_WIDTH / SCREEN_HEIGHT;
+    float fTexAspectRatio = (float)sfTexSize.x / sfTexSize.y;
+
+    if (fTexAspectRatio > fMiniMapViewAspectRatio) 
+    {
+	sfNewScale.x = SCREEN_WIDTH / sfTexSize.x;
+	sfNewScale.y = sfNewScale.x;
+    }
+    else 
+    {
+	sfNewScale.y = SCREEN_HEIGHT / sfTexSize.y;
+	sfNewScale.x = sfNewScale.y;
+    }
+
+    float fyOffset = 0.5f * (SCREEN_HEIGHT - sfNewScale.y * sfTexSize.y);
 
     m_sfMiniMapSprite.setScale(sfNewScale);
-    m_sfMiniMapSprite.setPosition(0.0f, fyNewPos);
+    m_sfMiniMapSprite.setPosition(0, fyOffset);
 
     return true;
 }
@@ -151,8 +163,8 @@ void Raycast::DrawWorldToTexture() {
 
 	m_aDistances[i] *= std::cos(DegToRad(fAngleDiff));
 
-	float fLerp = std::round(std::min(8.0f, m_aDistances[i]));
-	fLerp = 1.0f - (std::log((8.0f - fLerp) + 1.0f) / std::log(9.0f));
+	float fLerp = std::round(std::min(16.0f, m_aDistances[i]));
+	fLerp = 1.0f - (std::log(17.0f - fLerp) / std::log(17.0f));
 
 	sf::Color sfFogTransparency = m_asfViewWallsFog[i].getFillColor();
 	sfFogTransparency.a = fLerp * 255.0f;
@@ -235,8 +247,7 @@ inline sf::Vector2f Raycast::CastOneRay(bool bHorizontal, PlayerData& plyrData)
 {
     int nDepthOfField = 0;
    
-    std::vector<bool> vbPredicates;
-    vbPredicates.resize(3);
+    std::array<bool, 3> abPredicates;
 
     float fTrigVal = 0.0f;
 
@@ -247,33 +258,33 @@ inline sf::Vector2f Raycast::CastOneRay(bool bHorizontal, PlayerData& plyrData)
     bool bRunLoop = true;
 
     if (bHorizontal) {
-	vbPredicates[0] = plyrData.second > 180.0f;
-	vbPredicates[1] = plyrData.second < 180.0f;
-	vbPredicates[2] = plyrData.second == 0.0f || plyrData.second == 180.0f;
+	abPredicates[0] = plyrData.second > 180.0f;
+	abPredicates[1] = plyrData.second < 180.0f;
+	abPredicates[2] = plyrData.second == 0.0f || plyrData.second == 180.0f;
 	fTrigVal = -1.0 / (float)std::tan(DegToRad(plyrData.second));
     } else {
-	vbPredicates[0] = plyrData.second > 90.0f && plyrData.second < 270.0f;
-	vbPredicates[1] = plyrData.second < 90.0f || plyrData.second > 270.0f;
-	vbPredicates[2] = plyrData.second == 90.0f || plyrData.second == 270.0f;
+	abPredicates[0] = plyrData.second > 90.0f && plyrData.second < 270.0f;
+	abPredicates[1] = plyrData.second < 90.0f || plyrData.second > 270.0f;
+	abPredicates[2] = plyrData.second == 90.0f || plyrData.second == 270.0f;
 	fTrigVal = -std::tan(DegToRad(plyrData.second));
 	std::swap(plyrData.first.x, plyrData.first.y);
     }
 
-    if (vbPredicates[0])
+    if (abPredicates[0])
     {
 	sfRayIntersection.y = std::floor(plyrData.first.y) - 0.00001f;
 	sfRayIntersection.x = (plyrData.first.y - sfRayIntersection.y) * fTrigVal + plyrData.first.x;
 	sfOffset.y = -1.0f;
 	sfOffset.x = -sfOffset.y * fTrigVal;
     }
-    else if (vbPredicates[1])
+    else if (abPredicates[1])
     {
 	sfRayIntersection.y = std::floor(plyrData.first.y) + 1.0f;
 	sfRayIntersection.x = (plyrData.first.y - sfRayIntersection.y) * fTrigVal + plyrData.first.x;
 	sfOffset.y = 1.0f;
 	sfOffset.x = -sfOffset.y * fTrigVal;
     }
-    else if (vbPredicates[2])
+    else if (abPredicates[2])
     {
 	sfRayIntersection = { INFINITY, INFINITY };
 	bRunLoop = false;
@@ -285,7 +296,7 @@ inline sf::Vector2f Raycast::CastOneRay(bool bHorizontal, PlayerData& plyrData)
 	std::swap(sfOffset.x, sfOffset.y);
     }
 
-    while (nDepthOfField < 8 && bRunLoop) {
+    while (nDepthOfField < 16 && bRunLoop) {
 	sfMapLocation = { (int)sfRayIntersection.x, (int)sfRayIntersection.y };
 
 	if (sfMapLocation.y >= 0
