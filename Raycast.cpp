@@ -161,8 +161,6 @@ void Raycast::DrawWorldToTexture() {
 	fAngleDiff = fPlayerAngle - fRayAngle;
 	SetEquivalentAngle(fAngleDiff);
 
-	m_aDistances[i] *= std::cos(DegToRad(fAngleDiff));
-
 	float fLerp = std::round(std::min(16.0f, m_aDistances[i]));
 	fLerp = 1.0f - (std::log(17.0f - fLerp) / std::log(17.0f));
 
@@ -170,6 +168,8 @@ void Raycast::DrawWorldToTexture() {
 	sfFogTransparency.a = fLerp * 255.0f;
 
 	m_asfViewWallsFog[i].setFillColor(sfFogTransparency);
+
+	m_aDistances[i] *= std::cos(DegToRad(fAngleDiff));
 
 	fAngleDiff -= DELTA_THETA;
 	fRayProjectionPos = fRecipTan * std::tan(DegToRad(fAngleDiff));
@@ -337,6 +337,6 @@ void Raycast::MapTexture(float fPos, sf::RectangleShape& sfRect) {
 }
 
 Raycast::Raycast()
-    : GameApp(sf::VideoMode(1600, 600), "Raycast Engine", FPSControl::Locked30) 
+    : GameApp(sf::VideoMode(1600, 600), "Raycast Engine", FPSControl::Locked60) 
 {
 }
